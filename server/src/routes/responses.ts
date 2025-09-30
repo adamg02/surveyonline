@@ -1,0 +1,136 @@
+import { Router, Request, Response } from 'express';
+import { PrismaClient, QuestionType } from '@prisma/client';
+import { z } from 'zod';
+
+const prisma = new PrismaClient();
+export const router = Router();
+
+// Shape of answers per type
+// SINGLE_CHOICE: { optionId }
+// MULTI_CHOICE: { optionIds: [] }
+// OPEN_END_TEXT: { text }
+// OPEN_END_NUMERIC: { value }
+// MULTI_OPEN_END: { items: [{ openItemId, text }] } (respect exclusive via option or config later)
+// RANKING: { rankings: [{ optionId, rank }] }
+
+const responseSchema = z.object({
+  surveyId: z.string(),
+  answers: z.array(z.object({
+    questionId: z.string(),
+    payload: z.any()
+  })).min(1)
+});
+
+router.post('/', async (req: Request & { user?: any }, res: Response) => {
+  const parsed = responseSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  const { surveyId, answers } = parsed.data;
+
+  const survey = await prisma.survey.findUnique({ where: { id: surveyId }, include: { questions: { include: { options: true, openItems: true } } } });
+  if (!survey) return res.status(404).json({ error: 'Survey not found' });
+  if (survey.status !== 'ACTIVE') return res.status(400).json({ error: 'Survey not active' });
+
+  // Basic validation per answer
+  for (const ans of answers) {
+    const q = survey.questions.find(q => q.id === ans.questionId);
+    if (!q) return res.status(400).json({ error: `Invalid questionId ${ans.questionId}` });
+    // Track that this question has an answer for required check later
+    (ans as any)._questionType = q.type;
+    if (q.type === QuestionType.SINGLE_CHOICE) {
+      if (!ans.payload.optionId || !q.options.some(o => o.id === ans.payload.optionId)) {
+        return res.status(400).json({ error: `Invalid option for question ${q.id}` });
+      }
+    } else if (q.type === QuestionType.MULTI_CHOICE) {
+      if (!Array.isArray(ans.payload.optionIds)) return res.status(400).json({ error: `optionIds required for question ${q.id}` });
+      const invalid = ans.payload.optionIds.some((id: string) => !q.options.some(o => o.id === id));
+      if (invalid) return res.status(400).json({ error: `Invalid optionIds for question ${q.id}` });
+      // Exclusive option logic: if an exclusive option chosen, must be alone
+      const chosenExclusive = q.options.filter(o => o.isExclusive && ans.payload.optionIds.includes(o.id));
+      if (chosenExclusive.length > 0 && ans.payload.optionIds.length > 1) return res.status(400).json({ error: `Exclusive option must be alone for question ${q.id}` });
+    } else if (q.type === QuestionType.OPEN_END_TEXT) {
+      if (typeof ans.payload.text !== 'string') return res.status(400).json({ error: `text required for question ${q.id}` });
+    } else if (q.type === QuestionType.OPEN_END_NUMERIC) {
+      if (typeof ans.payload.value !== 'number') return res.status(400).json({ error: `numeric value required for question ${q.id}` });
+    } else if (q.type === QuestionType.MULTI_OPEN_END) {
+      if (!Array.isArray(ans.payload.items)) return res.status(400).json({ error: `items array required for question ${q.id}` });
+      for (const item of ans.payload.items) {
+        if (!q.openItems.some(oi => oi.id === item.openItemId)) return res.status(400).json({ error: `Invalid openItemId in question ${q.id}` });
+        if (typeof item.text !== 'string') return res.status(400).json({ error: `text required for open item in question ${q.id}` });
+      }
+    } else if (q.type === QuestionType.RANKING) {
+      if (!Array.isArray(ans.payload.rankings)) return res.status(400).json({ error: `rankings required for question ${q.id}` });
+      const optionIds = q.options.map(o => o.id);
+      const providedIds = ans.payload.rankings.map((r: any) => r.optionId);
+      // Ensure each ranking refers to a valid option and ranks are unique
+      if (providedIds.some((id: string) => !optionIds.includes(id))) return res.status(400).json({ error: `Invalid optionId in rankings for question ${q.id}` });
+      const ranks = ans.payload.rankings.map((r: any) => r.rank);
+      const uniqueRanks = new Set(ranks);
+      if (ranks.length !== uniqueRanks.size) return res.status(400).json({ error: `Duplicate ranks in question ${q.id}` });
+      // Optional stricter rule: must rank all options sequentially 1..N
+      if (ranks.length !== optionIds.length) return res.status(400).json({ error: `All options must be ranked for question ${q.id}` });
+      const expected = Array.from({ length: optionIds.length }, (_, i) => i + 1);
+      if (!expected.every(v => ranks.includes(v))) return res.status(400).json({ error: `Ranks must be 1..${optionIds.length} with no gaps for question ${q.id}` });
+    }
+  }
+
+  // Ensure required questions are answered
+  const requiredQuestions = survey.questions.filter(q => q.isRequired);
+  for (const rq of requiredQuestions) {
+    const answered = answers.some(a => a.questionId === rq.id);
+    if (!answered) return res.status(400).json({ error: `Required question missing: ${rq.id}` });
+  }
+
+  try {
+    const response = await prisma.response.create({
+      data: {
+        surveyId,
+        userId: req.user?.sub,
+        answers: { create: answers.map((a: any) => ({ questionId: a.questionId, payload: a.payload })) }
+      }
+    });
+    res.status(201).json(response);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to save response' });
+  }
+});
+
+// Basic aggregated results endpoint
+router.get('/survey/:surveyId/aggregate', async (req: Request, res: Response) => {
+  const survey = await prisma.survey.findUnique({ where: { id: req.params.surveyId }, include: { questions: { include: { options: true } } } });
+  if (!survey) return res.status(404).json({ error: 'Survey not found' });
+
+  const answers = await prisma.answer.findMany({
+    where: { question: { surveyId: survey.id } },
+    select: { questionId: true, payload: true }
+  });
+
+  const result: Record<string, any> = {};
+  for (const q of survey.questions) {
+    const qAnswers = answers.filter(a => a.questionId === q.id);
+    if (q.type === QuestionType.SINGLE_CHOICE) {
+      const counts: Record<string, number> = {};
+      qAnswers.forEach(a => { const id = (a.payload as any).optionId; counts[id] = (counts[id] || 0) + 1; });
+      result[q.id] = { type: q.type, counts };
+    } else if (q.type === QuestionType.MULTI_CHOICE) {
+      const counts: Record<string, number> = {};
+      qAnswers.forEach(a => { ((a.payload as any).optionIds || []).forEach((id: string) => { counts[id] = (counts[id] || 0) + 1; }); });
+      result[q.id] = { type: q.type, counts };
+    } else if (q.type === QuestionType.OPEN_END_TEXT) {
+      result[q.id] = { type: q.type, texts: qAnswers.map(a => (a.payload as any).text) };
+    } else if (q.type === QuestionType.OPEN_END_NUMERIC) {
+      const values = qAnswers.map(a => (a.payload as any).value).filter((v: any) => typeof v === 'number');
+      const avg = values.length ? values.reduce((s: number, v: number) => s + v, 0) / values.length : 0;
+      result[q.id] = { type: q.type, count: values.length, average: avg, min: Math.min(...values), max: Math.max(...values) };
+    } else if (q.type === QuestionType.MULTI_OPEN_END) {
+      const items: Record<string, string[]> = {};
+      qAnswers.forEach(a => { ((a.payload as any).items || []).forEach((it: any) => { if (!items[it.openItemId]) items[it.openItemId] = []; items[it.openItemId].push(it.text); }); });
+      result[q.id] = { type: q.type, items };
+    } else if (q.type === QuestionType.RANKING) {
+      const rankTallies: Record<string, Record<number, number>> = {};
+      qAnswers.forEach(a => { ((a.payload as any).rankings || []).forEach((r: any) => { if (!rankTallies[r.optionId]) rankTallies[r.optionId] = {}; rankTallies[r.optionId][r.rank] = (rankTallies[r.optionId][r.rank] || 0) + 1; }); });
+      result[q.id] = { type: q.type, rankings: rankTallies };
+    }
+  }
+  res.json(result);
+});

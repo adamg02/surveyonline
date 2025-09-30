@@ -1,0 +1,103 @@
+// Prisma schema for SurveyOnline
+// Using SQLite for initial development
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTI_CHOICE
+  OPEN_END_TEXT
+  OPEN_END_NUMERIC
+  MULTI_OPEN_END
+  RANKING
+}
+
+enum Role {
+  ADMIN
+  RESPONDENT
+}
+
+model Survey {
+  id          String      @id @default(cuid())
+  title       String
+  description String? 
+  status      String      @default("DRAFT") // DRAFT | ACTIVE | CLOSED
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  questions   Question[]
+  responses   Response[]
+}
+
+model Question {
+  id            String        @id @default(cuid())
+  survey        Survey        @relation(fields: [surveyId], references: [id])
+  surveyId      String
+  text          String
+  type          QuestionType
+  order         Int
+  isRequired    Boolean       @default(false)
+  // For ranking & multi-open-end we store dynamic constraints in json
+  config        Json?
+  options       Option[]
+  openItems     OpenItem[]    // For MULTI_OPEN_END item prompts
+  responses     Answer[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Option {
+  id          String    @id @default(cuid())
+  question    Question  @relation(fields: [questionId], references: [id])
+  questionId  String
+  text        String
+  code        String? // optional explicit code label
+  value       Int? // may be used for numeric weights
+  isExclusive Boolean @default(false) // for multi-select to mark 'None of the above'
+  order       Int
+}
+
+model OpenItem { // sub-prompts for multi open end
+  id          String    @id @default(cuid())
+  question    Question  @relation(fields: [questionId], references: [id])
+  questionId  String
+  label       String
+  code        String?
+  order       Int
+}
+
+model Response {
+  id         String    @id @default(cuid())
+  survey     Survey    @relation(fields: [surveyId], references: [id])
+  surveyId   String
+  createdAt  DateTime  @default(now())
+  answers    Answer[]
+  user       User?     @relation(fields: [userId], references: [id])
+  userId     String?
+}
+
+model Answer {
+  id          String    @id @default(cuid())
+  response    Response  @relation(fields: [responseId], references: [id])
+  responseId  String
+  question    Question  @relation(fields: [questionId], references: [id])
+  questionId  String
+  // We'll use json answer payload to flexibly store different shapes per type
+  payload     Json
+  createdAt   DateTime  @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(RESPONDENT)
+  createdAt DateTime @default(now())
+  responses Response[]
+}
