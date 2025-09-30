@@ -1,3 +1,7 @@
+# Render.com Blueprint for SurveyOnline
+# This deploys the backend API and database
+# Deploy the frontend separately as a Static Site
+
 services:
   # Backend API Service
   - type: web
@@ -21,24 +25,19 @@ services:
         value: admin@example.com
       - key: ADMIN_PASSWORD
         generateValue: true
-    
-  # Frontend Static Site
-  - type: static_site
-    name: surveyonline-frontend
-    buildCommand: cd client && npm install && npm run build
-    publishPath: ./client/dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://surveyonline-api.onrender.com
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
 
 databases:
   - name: surveyonline-db
     databaseName: surveyonline
     user: surveyonline_user
+
+# After deploying this blueprint, manually create a Static Site for the frontend:
+# 1. New > Static Site
+# 2. Connect same repository
+# 3. Build command: cd client && npm install && npm run build
+# 4. Publish directory: ./client/dist
+# 5. Environment variable: VITE_API_URL=https://surveyonline-api.onrender.com
+# 6. Redirect rule: /* -> /index.html (rewrite)
 
 # Environment Variables Documentation
 # The following environment variables will be automatically set:

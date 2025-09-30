@@ -17,16 +17,25 @@ cd surveyonline
 ```
 
 ### 2. Deploy to Render
+
+#### Option A: Blueprint + Manual Frontend (Recommended)
 1. Go to [Render Dashboard](https://dashboard.render.com)
 2. Click "New" → "Blueprint"
 3. Connect your GitHub repository
 4. Select the repository containing the survey platform
-5. Render will automatically detect the `render.yaml` file
-6. If blueprint fails, use `MANUAL_DEPLOYMENT.md` for step-by-step instructions
-7. Review the services that will be created:
+5. Render will detect the `render.yaml` file and create:
    - **surveyonline-api**: Backend Node.js service
-   - **surveyonline-frontend**: Frontend static site
    - **surveyonline-db**: PostgreSQL database
+6. After blueprint deployment completes, manually add the frontend:
+   - Click "New" → "Static Site"
+   - Connect the same GitHub repository
+   - **Build Command**: `cd client && npm install && npm run build`
+   - **Publish Directory**: `./client/dist`
+   - **Environment Variable**: `VITE_API_URL=https://surveyonline-api.onrender.com`
+   - **Redirect Rule**: `/*` → `/index.html` (rewrite)
+
+#### Option B: Full Manual Deployment
+Follow the complete step-by-step guide in `MANUAL_DEPLOYMENT.md`
 
 ### 3. Configure Environment Variables
 The blueprint automatically sets up most environment variables, but you may want to customize:

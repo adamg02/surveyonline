@@ -39,15 +39,19 @@ An online survey platform supporting multiple question types:
 
 ### Production Deployment
 
-Deploy to Render.com with one-click using the included blueprint:
+Deploy to Render.com in two steps:
 
+1. **Blueprint Deployment**: Deploy backend + database using `render.yaml`
+2. **Manual Frontend**: Add static site for the React frontend
+
+Quick start:
 1. Fork this repository
 2. Connect to [Render Dashboard](https://dashboard.render.com)
 3. Create new Blueprint deployment
-4. Select this repository
-5. Deploy automatically with `render.yaml`
+4. Select this repository (deploys backend + database)
+5. Manually add Static Site for frontend
 
-See `RENDER_DEPLOYMENT.md` for detailed deployment instructions.
+See `QUICK_DEPLOY.md` for step-by-step instructions or `RENDER_DEPLOYMENT.md` for comprehensive guide.
 
 ### Commands
 
