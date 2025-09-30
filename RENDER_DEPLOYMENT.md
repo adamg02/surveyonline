@@ -22,7 +22,8 @@ cd surveyonline
 3. Connect your GitHub repository
 4. Select the repository containing the survey platform
 5. Render will automatically detect the `render.yaml` file
-6. Review the services that will be created:
+6. If blueprint fails, use `MANUAL_DEPLOYMENT.md` for step-by-step instructions
+7. Review the services that will be created:
    - **surveyonline-api**: Backend Node.js service
    - **surveyonline-frontend**: Frontend static site
    - **surveyonline-db**: PostgreSQL database
