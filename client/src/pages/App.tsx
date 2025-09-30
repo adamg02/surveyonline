@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SurveyBuilder } from '../components/SurveyBuilder';
 import { SurveyTaker } from '../components/SurveyTaker';
 import { SurveyResults } from '../components/SurveyResults';
-import axios from 'axios';
+import axios from '../lib/axios';
 import '../styles.css';
 
 export interface SurveySummary { id: string; title: string; status: string; }

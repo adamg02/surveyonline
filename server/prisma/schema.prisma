@@ -1,9 +1,9 @@
 // Prisma schema for SurveyOnline
-// Using SQLite for initial development
+// Supports both SQLite (development) and PostgreSQL (production)
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = env("DATABASE_PROVIDER") != null ? env("DATABASE_PROVIDER") : "sqlite"
+  url      = env("DATABASE_URL") != null ? env("DATABASE_URL") : "file:./dev.db"
 }
 
 generator client {

@@ -30,10 +30,24 @@ An online survey platform supporting multiple question types:
 
 ## Quick Start
 
+### Local Development
+
 1. Install dependencies
 2. Generate Prisma client & migrate
 3. Seed initial data (optional)
 4. Run dev (concurrently runs server and client)
+
+### Production Deployment
+
+Deploy to Render.com with one-click using the included blueprint:
+
+1. Fork this repository
+2. Connect to [Render Dashboard](https://dashboard.render.com)
+3. Create new Blueprint deployment
+4. Select this repository
+5. Deploy automatically with `render.yaml`
+
+See `RENDER_DEPLOYMENT.md` for detailed deployment instructions.
 
 ### Commands
 
@@ -133,3 +147,18 @@ See `DRAG_DROP_README.md`, `RANKING_DRAG_DROP_README.md`, and `SINGLE_QUESTION_R
 - Real-time collaboration
 - Survey templates
 - Dark mode
+
+## Deployment
+
+### Render.com (Recommended)
+- One-click deployment with `render.yaml` blueprint
+- Automatic PostgreSQL database setup
+- SSL certificates and CDN included
+- Auto-scaling and monitoring
+
+### Manual Deployment
+- Supports any Node.js hosting platform
+- PostgreSQL database required for production
+- Environment variables configuration needed
+
+See `RENDER_DEPLOYMENT.md` for complete deployment guide.
