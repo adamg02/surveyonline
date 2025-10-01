@@ -1,10 +1,9 @@
-// Prisma schema for SurveyOnline
-// Uses PostgreSQL for production (Render.com)
-// For local development with SQLite, see schema-sqlite.prisma
+// Prisma schema for SurveyOnline - SQLite version for local development
+// To use this schema: npx prisma migrate dev --schema=./prisma/schema-sqlite.prisma
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 generator client {
