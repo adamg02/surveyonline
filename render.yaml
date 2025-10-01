@@ -7,6 +7,8 @@ services:
   - type: web
     name: surveyonline-api
     runtime: node
+    plan: free
+    region: oregon
     buildCommand: cd server && npm install && npx prisma generate && npm run build
     startCommand: cd server && npx prisma migrate deploy && npm run seed:prod && npm start
     healthCheckPath: /api/health
