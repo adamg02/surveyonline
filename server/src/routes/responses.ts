@@ -96,9 +96,30 @@ router.post('/', async (req: Request & { user?: any }, res: Response) => {
 });
 
 // Basic aggregated results endpoint
-router.get('/survey/:surveyId/aggregate', async (req: Request, res: Response) => {
+router.get('/survey/:surveyId/aggregate', async (req: Request & { user?: any }, res: Response) => {
+  // Check if user is authenticated and is admin
+  const header = req.headers.authorization;
+  let isAdmin = false;
+  
+  if (header) {
+    try {
+      const token = header.replace('Bearer ', '');
+      const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      isAdmin = decoded.role === 'ADMIN';
+    } catch {
+      // Invalid token, treat as anonymous user
+    }
+  }
+  
   const survey = await prisma.survey.findUnique({ where: { id: req.params.surveyId }, include: { questions: { include: { options: true } } } });
   if (!survey) return res.status(404).json({ error: 'Survey not found' });
+  
+  // If not admin and survey is not ACTIVE, deny access to results
+  if (!isAdmin && survey.status !== 'ACTIVE') {
+    return res.status(404).json({ error: 'Survey not found' });
+  }
 
   const answers = await prisma.answer.findMany({
     where: { question: { surveyId: survey.id } },

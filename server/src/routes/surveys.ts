@@ -61,15 +61,133 @@ router.post('/', authMiddleware(['ADMIN']), async (req: Request, res: Response) 
   }
 });
 
-router.get('/', async (_req: Request, res: Response) => {
-  const surveys = await prisma.survey.findMany({ orderBy: { createdAt: 'desc' } });
+router.get('/', async (req: Request & { user?: any }, res: Response) => {
+  // Check if user is authenticated and is admin
+  const header = req.headers.authorization;
+  let isAdmin = false;
+  
+  if (header) {
+    try {
+      const token = header.replace('Bearer ', '');
+      const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      isAdmin = decoded.role === 'ADMIN';
+    } catch {
+      // Invalid token, treat as anonymous user
+    }
+  }
+  
+  // If admin, show all surveys; if anonymous/respondent, show only ACTIVE surveys
+  const whereClause = isAdmin ? {} : { status: 'ACTIVE' };
+  const surveys = await prisma.survey.findMany({ 
+    where: whereClause,
+    orderBy: { createdAt: 'desc' } 
+  });
   res.json(surveys);
 });
 
-router.get('/:id', async (req: Request, res: Response) => {
-  const survey = await prisma.survey.findUnique({ where: { id: req.params.id }, include: { questions: { include: { options: true, openItems: true } } } });
+router.get('/:id', async (req: Request & { user?: any }, res: Response) => {
+  // Check if user is authenticated and is admin
+  const header = req.headers.authorization;
+  let isAdmin = false;
+  
+  if (header) {
+    try {
+      const token = header.replace('Bearer ', '');
+      const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      isAdmin = decoded.role === 'ADMIN';
+    } catch {
+      // Invalid token, treat as anonymous user
+    }
+  }
+  
+  const survey = await prisma.survey.findUnique({ 
+    where: { id: req.params.id }, 
+    include: { questions: { include: { options: true, openItems: true } } } 
+  });
+  
   if (!survey) return res.status(404).json({ error: 'Not found' });
+  
+  // If not admin and survey is not ACTIVE, deny access
+  if (!isAdmin && survey.status !== 'ACTIVE') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
   res.json(survey);
+});
+
+// Update survey (ADMIN) - only DRAFT surveys can be edited
+router.put('/:id', authMiddleware(['ADMIN']), async (req: Request, res: Response) => {
+  const parsed = surveyCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+  
+  const { title, description, questions } = parsed.data;
+  const id = req.params.id;
+  
+  try {
+    // Check if survey exists and is DRAFT
+    const existingSurvey = await prisma.survey.findUnique({ where: { id } });
+    if (!existingSurvey) {
+      return res.status(404).json({ error: 'Survey not found' });
+    }
+    if (existingSurvey.status !== 'DRAFT') {
+      return res.status(400).json({ error: 'Only DRAFT surveys can be edited' });
+    }
+
+    // Delete existing questions and related data
+    const questionIds = (await prisma.question.findMany({ where: { surveyId: id }, select: { id: true } })).map((q: { id: string }) => q.id);
+    
+    await prisma.$transaction([
+      // Delete related data first
+      prisma.option.deleteMany({ where: { questionId: { in: questionIds } } }),
+      prisma.openItem.deleteMany({ where: { questionId: { in: questionIds } } }),
+      prisma.question.deleteMany({ where: { surveyId: id } }),
+      
+      // Update survey with new data
+      prisma.survey.update({
+        where: { id },
+        data: {
+          title,
+          description,
+          questions: {
+            create: questions.map((q: any) => {
+              const options = Array.isArray(q.options) && q.options.length > 0
+                ? { create: q.options.map((o: any) => ({ text: o.text, code: o.code, value: o.value, isExclusive: o.isExclusive ?? false, order: o.order })) }
+                : undefined;
+              const openItems = Array.isArray(q.openItems) && q.openItems.length > 0
+                ? { create: q.openItems.map((oi: any) => ({ label: oi.label, code: oi.code, order: oi.order })) }
+                : undefined;
+              return {
+                text: q.text,
+                type: q.type,
+                order: q.order,
+                isRequired: q.isRequired ?? false,
+                config: q.config,
+                options,
+                openItems
+              };
+            })
+          }
+        }
+      })
+    ]);
+
+    // Fetch and return updated survey
+    const updatedSurvey = await prisma.survey.findUnique({
+      where: { id },
+      include: { questions: { include: { options: true, openItems: true } } }
+    });
+    
+    res.json(updatedSurvey);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to update survey' });
+  }
 });
 
 router.patch('/:id/status', async (req: Request, res: Response) => {

@@ -11,7 +11,9 @@ An online survey platform supporting multiple question types:
 ## Features
 
 ✅ **Survey Builder**: Create surveys with multiple question types  
+✅ **Survey Editor**: Edit draft surveys with full modification capabilities  
 ✅ **Authentication**: JWT-based authentication with admin/respondent roles  
+✅ **Access Control**: Anonymous users can only see and take ACTIVE surveys  
 ✅ **Survey Management**: Activate, clone, delete, and export surveys  
 ✅ **Response Collection**: Submit and validate survey responses  
 ✅ **Results & Analytics**: View aggregated survey results  
@@ -70,6 +72,42 @@ After running the seed script:
 - Email: `admin@example.com`
 - Password: `admin123`
 
+### Survey Management
+
+**Creating Surveys:**
+- Click "Create Survey" to build a new survey from scratch
+- Add questions with drag & drop reordering
+- Configure different question types and options
+
+**Editing Draft Surveys:**
+- Click "Edit" on any DRAFT survey to modify it
+- Full editing capability - change questions, options, order, and settings
+- Only DRAFT surveys can be edited (ACTIVE/CLOSED surveys are read-only)
+- Changes are saved immediately when you click "Update Survey"
+
+**Survey Status Management:**
+- **DRAFT**: Editable, not available for responses, only visible to admins
+- **ACTIVE**: Live for responses, read-only, visible to all users
+- **CLOSED**: No longer accepting responses, read-only, only visible to admins
+
+### Access Control
+
+**Anonymous Users:**
+- Can only see ACTIVE surveys in the survey list
+- Can only take ACTIVE surveys
+- Cannot view results, admin controls, or export data
+- Cannot access DRAFT or CLOSED surveys
+
+**Authenticated Respondents:**
+- Same permissions as anonymous users
+- Can register and login to track their responses
+
+**Admin Users:**
+- Full access to all surveys regardless of status
+- Can create, edit, activate, close, clone, and delete surveys
+- Can view results and export data for all surveys
+- Can manage survey status and access controls
+
 ### API Endpoints
 
 **Authentication:**
@@ -80,6 +118,7 @@ After running the seed script:
 - POST /api/surveys - Create survey with questions (Admin only)
 - GET /api/surveys - List surveys
 - GET /api/surveys/:id - Get survey (incl questions)
+- PUT /api/surveys/:id - Update draft survey (Admin only)
 - PATCH /api/surveys/:id/status - Set status DRAFT/ACTIVE/CLOSED (Admin only)
 - POST /api/surveys/:id/clone - Clone survey (Admin only)
 - DELETE /api/surveys/:id - Delete survey (Admin only)
@@ -127,16 +166,41 @@ The survey taker features a focused, one-question-at-a-time interface:
 
 See `DRAG_DROP_README.md`, `RANKING_DRAG_DROP_README.md`, and `SINGLE_QUESTION_README.md` for detailed implementation notes.
 
+### Beautiful Results Dashboard
+
+The results page provides comprehensive analytics with stunning visualizations:
+
+**Visual Analytics:**
+- **Progress Bar Charts**: Clear percentage breakdowns for choice questions
+- **Statistical Summaries**: Average, median, min, max for numeric responses
+- **Ranking Analysis**: Average position rankings with detailed breakdowns
+- **Text Response Collection**: Organized display of all text responses
+
+**Design Features:**
+- **Modern UI**: Clean, professional design with gradients and cards
+- **Color-Coded Charts**: Distinct colors for different options and rankings
+- **Responsive Layout**: Perfect display on desktop, tablet, and mobile
+- **Loading States**: Smooth loading animations and error handling
+
+**Data Insights:**
+- **Total Response Count**: Clear overview of survey participation
+- **Question-by-Question Analysis**: Detailed breakdown for each question type
+- **Export Integration**: Quick access to JSON and CSV exports
+- **Real-time Updates**: Fresh data on each page load
+
 ### Completed Features
 
 - Authentication & roles ✅
+- Access control for anonymous users ✅
 - Survey CRUD operations ✅
+- Survey editing for draft surveys ✅
 - Response submission & validation ✅
 - Admin controls (activate, clone, delete) ✅
 - Export (CSV / JSON) ✅
 - Drag and drop question reordering ✅
 - Drag and drop ranking interface ✅
 - Single question interface with progress tracking ✅
+- Beautiful results dashboard with charts and analytics ✅
 - Client-side validation ✅
 - Accessibility improvements ✅
 - Responsive design ✅
