@@ -131,7 +131,13 @@ export const App: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Chip 
                 label={`${user.email} (${user.role})`} 
-                color="secondary" 
+                sx={{ 
+                  color: 'white',
+                  borderColor: 'white',
+                  '& .MuiChip-label': {
+                    color: 'white'
+                  }
+                }}
                 variant="outlined"
               />
               <Button 
