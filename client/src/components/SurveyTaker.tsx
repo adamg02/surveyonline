@@ -1,4 +1,31 @@
 import React, { useEffect, useState } from 'react';
+import {
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Box,
+  LinearProgress,
+  Alert,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  FormGroup,
+  Checkbox,
+  TextField,
+  Paper,
+  Chip,
+  Divider,
+  IconButton,
+} from '@mui/material';
+import {
+  ArrowBack as ArrowBackIcon,
+  ArrowForward as ArrowForwardIcon,
+  DragIndicator as DragIndicatorIcon,
+  Send as SendIcon,
+  ExitToApp as ExitToAppIcon,
+} from '@mui/icons-material';
 import axios from '../lib/axios';
 import {
   DndContext,
@@ -46,27 +73,49 @@ const SortableRankingItem: React.FC<SortableRankingItemProps> = ({ item, index }
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <div
+    <Paper
       ref={setNodeRef}
-      style={style}
-      className="ranking-item"
+      sx={{
+        ...style,
+        opacity: isDragging ? 0.5 : 1,
+        p: 2,
+        mb: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        border: '1px solid',
+        borderColor: 'divider',
+        '&:hover': {
+          borderColor: 'primary.main',
+        },
+      }}
+      elevation={isDragging ? 8 : 1}
       {...attributes}
     >
-      <div
+      <IconButton
+        size="small"
         {...listeners}
-        className={`drag-handle ${isDragging ? 'dragging' : ''}`}
+        sx={{ 
+          cursor: 'grab',
+          '&:active': { cursor: 'grabbing' },
+        }}
       >
-        ⋮⋮
-      </div>
-      <div className="ranking-content">
-        <span className="ranking-number">{index + 1}.</span>
-        <span className="ranking-text">{item.text}</span>
-      </div>
-    </div>
+        <DragIndicatorIcon />
+      </IconButton>
+      <Chip 
+        label={index + 1} 
+        size="small" 
+        color="primary" 
+        sx={{ minWidth: 32 }}
+      />
+      <Typography variant="body1" sx={{ flexGrow: 1 }}>
+        {item.text}
+      </Typography>
+    </Paper>
   );
 };
 
@@ -174,12 +223,21 @@ export const SurveyTaker: React.FC<Props> = ({ surveyId, onBack }) => {
         };
       });
     } else {
-      // Initialize with original option order
-      return question.options.map((option: any, index: number) => ({
+      // Initialize with original option order and save to answers
+      const initialItems = question.options.map((option: any, index: number) => ({
         id: option.id,
         text: option.text,
         rank: index + 1
       }));
+      
+      // Automatically save initial rankings to answers
+      const initialRankings = initialItems.map((item: any, index: number) => ({
+        optionId: item.id,
+        rank: index + 1
+      }));
+      updateAnswer(question.id, { rankings: initialRankings });
+      
+      return initialItems;
     }
   };
 
@@ -237,160 +295,275 @@ export const SurveyTaker: React.FC<Props> = ({ surveyId, onBack }) => {
     }
     
     const payload = { surveyId, answers: Object.entries(answers).map(([questionId, payload]) => ({ questionId, payload })) };
-    await axios.post('/api/responses', payload);
-    setSubmitted(true);
+    
+    try {
+      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
+      await axios.post('/api/responses', payload);
+      setSubmitted(true);
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      console.error('Error response:', error.response?.data);
+      setErrors([`Submission failed: ${error.response?.data?.error || error.message}`]);
+    }
   };
 
-  if (!survey) return <div>Loading...</div>;
-  if (submitted) return <div><p>Thanks for your response.</p><button onClick={onBack}>Back</button></div>;
+  if (!survey) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <Typography>Loading...</Typography>
+    </Box>
+  );
+  
+  if (submitted) return (
+    <Card sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
+      <CardContent sx={{ textAlign: 'center', py: 4 }}>
+        <Typography variant="h5" gutterBottom color="success.main">
+          Thank you for your response!
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 3 }}>
+          Your survey has been submitted successfully.
+        </Typography>
+        <Button 
+          variant="contained" 
+          onClick={onBack}
+          startIcon={<ArrowBackIcon />}
+        >
+          Back to Surveys
+        </Button>
+      </CardContent>
+    </Card>
+  );
 
   const currentQuestion = getCurrentQuestion();
-  if (!currentQuestion) return <div>No questions available.</div>;
+  if (!currentQuestion) return (
+    <Card sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
+      <CardContent>
+        <Typography>No questions available.</Typography>
+        <Button onClick={onBack} sx={{ mt: 2 }}>Back</Button>
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div>
-      <h2>{survey.title}</h2>
-      {survey.description && <p className="survey-description">{survey.description}</p>}
-      
+    <Box sx={{ maxWidth: 800, mx: 'auto', mt: 2 }}>
+      {/* Header */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h4" component="h1" gutterBottom>
+            {survey.title}
+          </Typography>
+          {survey.description && (
+            <Typography variant="body1" color="text.secondary">
+              {survey.description}
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Progress indicator */}
-      <div className="survey-progress">
-        <div className="progress-text">
-          Question {currentQuestionIndex + 1} of {getTotalQuestions()}
-        </div>
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ width: `${((currentQuestionIndex + 1) / getTotalQuestions()) * 100}%` }}
-          ></div>
-        </div>
-      </div>
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              Question {currentQuestionIndex + 1} of {getTotalQuestions()}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {Math.round(((currentQuestionIndex + 1) / getTotalQuestions()) * 100)}% Complete
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={((currentQuestionIndex + 1) / getTotalQuestions()) * 100}
+            sx={{ height: 8, borderRadius: 4 }}
+          />
+        </CardContent>
+      </Card>
 
       {/* Error display */}
-      {errors.length > 0 && <div className="error preline">{errors.join('\n')}</div>}
+      {errors.length > 0 && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {errors.map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
+        </Alert>
+      )}
 
       {/* Current question */}
-      <div className="question-container card">
-        <p><strong>{currentQuestion.text}</strong></p>
-        {currentQuestion.isRequired && <span className="tag-required">*Required</span>}
-        
-        {/* Single Choice */}
-        {currentQuestion.type === 'SINGLE_CHOICE' && currentQuestion.options.map((o: any) => (
-          <label key={o.id} className="option-label">
-            <input 
-              type="radio" 
-              name={currentQuestion.id} 
-              value={o.id} 
-              checked={answers[currentQuestion.id]?.optionId === o.id}
-              onChange={() => updateAnswer(currentQuestion.id, { optionId: o.id })} 
-            /> 
-            {o.text}
-          </label>
-        ))}
-
-        {/* Multi Choice */}
-        {currentQuestion.type === 'MULTI_CHOICE' && currentQuestion.options.map((o: any) => {
-          const set = new Set((answers[currentQuestion.id]?.optionIds) || []);
-          const toggle = () => { 
-            if (set.has(o.id)) set.delete(o.id); 
-            else set.add(o.id); 
-            updateAnswer(currentQuestion.id, { optionIds: Array.from(set) }); 
-          };
-          return (
-            <label key={o.id} className="option-label">
-              <input type="checkbox" checked={set.has(o.id)} onChange={toggle} /> 
-              {o.text}
-            </label>
-          );
-        })}
-
-        {/* Open End Text */}
-        {currentQuestion.type === 'OPEN_END_TEXT' && (
-          <input 
-            type="text" 
-            aria-label={currentQuestion.text} 
-            placeholder="Your answer" 
-            value={answers[currentQuestion.id]?.text || ''}
-            onChange={e => updateAnswer(currentQuestion.id, { text: e.target.value })} 
-          />
-        )}
-
-        {/* Open End Numeric */}
-        {currentQuestion.type === 'OPEN_END_NUMERIC' && (
-          <input 
-            type="number" 
-            aria-label={currentQuestion.text} 
-            placeholder="0" 
-            value={answers[currentQuestion.id]?.value || ''}
-            onChange={e => updateAnswer(currentQuestion.id, { value: parseFloat(e.target.value) })} 
-          />
-        )}
-
-        {/* Multi Open End */}
-        {currentQuestion.type === 'MULTI_OPEN_END' && currentQuestion.openItems.map((it: any) => (
-          <div key={it.id} className="open-item">
-            <label>
-              {it.label} 
-              <input 
-                type="text" 
-                value={answers[currentQuestion.id]?.items?.find((x: any) => x.openItemId === it.id)?.text || ''}
-                onChange={e => {
-                  const existing = answers[currentQuestion.id]?.items || [];
-                  const filtered = existing.filter((x: any) => x.openItemId !== it.id);
-                  updateAnswer(currentQuestion.id, { items: [...filtered, { openItemId: it.id, text: e.target.value }] });
-                }} 
-              />
-            </label>
-          </div>
-        ))}
-
-        {/* Ranking */}
-        {currentQuestion.type === 'RANKING' && (
-          <div className="ranking-container">
-            <p className="ranking-instruction">Drag to reorder items by preference (1st = most preferred):</p>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={(event) => handleRankingDragEnd(currentQuestion.id, event)}
-            >
-              <SortableContext 
-                items={getRankingItems(currentQuestion).map(item => item.id)} 
-                strategy={verticalListSortingStrategy}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <Typography variant="h6" component="h2">
+              {currentQuestion.text}
+            </Typography>
+            {currentQuestion.isRequired && (
+              <Chip label="Required" size="small" color="error" variant="outlined" />
+            )}
+          </Box>
+          
+          {/* Single Choice */}
+          {currentQuestion.type === 'SINGLE_CHOICE' && (
+            <FormControl component="fieldset">
+              <RadioGroup
+                value={answers[currentQuestion.id]?.optionId || ''}
+                onChange={(e) => updateAnswer(currentQuestion.id, { optionId: e.target.value })}
               >
-                {getRankingItems(currentQuestion).map((item, index) => (
-                  <SortableRankingItem
-                    key={item.id}
-                    item={item}
-                    index={index}
+                {currentQuestion.options.map((o: any) => (
+                  <FormControlLabel
+                    key={o.id}
+                    value={o.id}
+                    control={<Radio />}
+                    label={o.text}
                   />
                 ))}
-              </SortableContext>
-            </DndContext>
-          </div>
-        )}
-      </div>
+              </RadioGroup>
+            </FormControl>
+          )}
+
+          {/* Multi Choice */}
+          {currentQuestion.type === 'MULTI_CHOICE' && (
+            <FormGroup>
+              {currentQuestion.options.map((o: any) => {
+                const set = new Set((answers[currentQuestion.id]?.optionIds) || []);
+                const toggle = () => { 
+                  if (set.has(o.id)) set.delete(o.id); 
+                  else set.add(o.id); 
+                  updateAnswer(currentQuestion.id, { optionIds: Array.from(set) }); 
+                };
+                return (
+                  <FormControlLabel
+                    key={o.id}
+                    control={
+                      <Checkbox 
+                        checked={set.has(o.id)} 
+                        onChange={toggle} 
+                      />
+                    }
+                    label={o.text}
+                  />
+                );
+              })}
+            </FormGroup>
+          )}
+
+          {/* Open End Text */}
+          {currentQuestion.type === 'OPEN_END_TEXT' && (
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Your answer"
+              value={answers[currentQuestion.id]?.text || ''}
+              onChange={e => updateAnswer(currentQuestion.id, { text: e.target.value })}
+              variant="outlined"
+            />
+          )}
+
+          {/* Open End Numeric */}
+          {currentQuestion.type === 'OPEN_END_NUMERIC' && (
+            <TextField
+              fullWidth
+              type="number"
+              placeholder="Enter a number"
+              value={answers[currentQuestion.id]?.value || ''}
+              onChange={e => {
+                const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                updateAnswer(currentQuestion.id, { value });
+              }}
+              variant="outlined"
+            />
+          )}
+
+          {/* Multi Open End */}
+          {currentQuestion.type === 'MULTI_OPEN_END' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {currentQuestion.openItems.map((it: any) => (
+                <TextField
+                  key={it.id}
+                  fullWidth
+                  label={it.label}
+                  value={answers[currentQuestion.id]?.items?.find((x: any) => x.openItemId === it.id)?.text || ''}
+                  onChange={e => {
+                    const existing = answers[currentQuestion.id]?.items || [];
+                    const filtered = existing.filter((x: any) => x.openItemId !== it.id);
+                    updateAnswer(currentQuestion.id, { items: [...filtered, { openItemId: it.id, text: e.target.value }] });
+                  }}
+                  variant="outlined"
+                />
+              ))}
+            </Box>
+          )}
+
+          {/* Ranking */}
+          {currentQuestion.type === 'RANKING' && (
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Drag to reorder items by preference (1st = most preferred):
+              </Typography>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(event) => handleRankingDragEnd(currentQuestion.id, event)}
+              >
+                <SortableContext 
+                  items={getRankingItems(currentQuestion).map(item => item.id)} 
+                  strategy={verticalListSortingStrategy}
+                >
+                  {getRankingItems(currentQuestion).map((item, index) => (
+                    <SortableRankingItem
+                      key={item.id}
+                      item={item}
+                      index={index}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Navigation */}
-      <div className="survey-navigation">
-        <button 
-          className="secondary" 
-          onClick={goToPreviousQuestion} 
-          disabled={isFirstQuestion()}
-        >
-          Previous
-        </button>
-        
-        <button onClick={onBack} className="secondary">Exit Survey</button>
-        
-        {!isLastQuestion() ? (
-          <button onClick={goToNextQuestion}>
-            Next
-          </button>
-        ) : (
-          <button onClick={submit}>
-            Submit Survey
-          </button>
-        )}
-      </div>
-    </div>
+      <Card>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Button
+              variant="outlined"
+              onClick={goToPreviousQuestion}
+              disabled={isFirstQuestion()}
+              startIcon={<ArrowBackIcon />}
+            >
+              Previous
+            </Button>
+            
+            <Button
+              variant="outlined"
+              onClick={onBack}
+              startIcon={<ExitToAppIcon />}
+              color="error"
+            >
+              Exit Survey
+            </Button>
+            
+            {!isLastQuestion() ? (
+              <Button
+                variant="contained"
+                onClick={goToNextQuestion}
+                endIcon={<ArrowForwardIcon />}
+              >
+                Next
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                color="success"
+                onClick={submit}
+                endIcon={<SendIcon />}
+              >
+                Submit Survey
+              </Button>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };

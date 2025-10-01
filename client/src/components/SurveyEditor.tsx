@@ -1,4 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormControlLabel,
+  Checkbox,
+  IconButton,
+  Paper,
+  Chip,
+  Divider,
+  Alert,
+  Container,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  DragIndicator as DragIndicatorIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  AddCircle as AddCircleIcon,
+  RemoveCircle as RemoveCircleIcon,
+} from '@mui/icons-material';
 import axios from '../lib/axios';
 import {
   DndContext,
@@ -426,15 +455,53 @@ export const SurveyEditor: React.FC<EditorProps> = ({ onDone, surveyId }) => {
   }
 
   return (
-    <div>
-      <h2>{surveyId ? 'Edit Survey' : 'Create Survey'}</h2>
-      <label>Title <input value={title} onChange={e => setTitle(e.target.value)} /></label>
-      <br />
-      <label>Description <input value={description} onChange={e => setDescription(e.target.value)} /></label>
-      <br />
-      <button onClick={addQuestion}>Add Question</button>
-      {!!errors.length && (
-        <div className="error preline">{errors.join('\n')}</div>
+    <Container maxWidth="lg">
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h4" component="h1" gutterBottom>
+            {surveyId ? 'Edit Survey' : 'Create Survey'}
+          </Typography>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <TextField
+              fullWidth
+              label="Survey Title"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              variant="outlined"
+              required
+            />
+            
+            <TextField
+              fullWidth
+              label="Survey Description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              variant="outlined"
+              multiline
+              rows={2}
+            />
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6">Questions</Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={addQuestion}
+              >
+                Add Question
+              </Button>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {errors.length > 0 && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {errors.map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
+        </Alert>
       )}
       
       <DndContext
@@ -459,13 +526,27 @@ export const SurveyEditor: React.FC<EditorProps> = ({ onDone, surveyId }) => {
         </SortableContext>
       </DndContext>
 
-      <button 
-        disabled={!title || questions.length === 0 || loading} 
-        onClick={save}
-      >
-        {loading ? 'Saving...' : (surveyId ? 'Update Survey' : 'Save Survey')}
-      </button>
-      <button onClick={onDone}>Cancel</button>
-    </div>
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              onClick={onDone}
+              startIcon={<CancelIcon />}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              disabled={!title || questions.length === 0 || loading}
+              onClick={save}
+              startIcon={<SaveIcon />}
+            >
+              {loading ? 'Saving...' : (surveyId ? 'Update Survey' : 'Save Survey')}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };

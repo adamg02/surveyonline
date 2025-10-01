@@ -1,4 +1,33 @@
 import React, { useState } from 'react';
+import {
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormControlLabel,
+  Checkbox,
+  IconButton,
+  Paper,
+  Chip,
+  Divider,
+  Alert,
+  Container,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  DragIndicator as DragIndicatorIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  AddCircle as AddCircleIcon,
+  RemoveCircle as RemoveCircleIcon,
+} from '@mui/icons-material';
 import axios from '../lib/axios';
 import {
   DndContext,
@@ -78,47 +107,67 @@ const SortableOption: React.FC<SortableOptionProps> = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <div
+    <Paper
       ref={setNodeRef}
-      style={style}
-      className="option-item"
+      sx={{
+        ...style,
+        opacity: isDragging ? 0.5 : 1,
+        p: 2,
+        mb: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        border: '1px solid',
+        borderColor: 'divider',
+        '&:hover': {
+          borderColor: 'primary.main',
+        },
+      }}
+      elevation={isDragging ? 8 : 1}
       {...attributes}
     >
-      <div className="flex-row gap-xs">
-        <div
-          {...listeners}
-          className={`drag-handle ${isDragging ? 'dragging' : ''}`}
-        >
-          ⋮⋮
-        </div>
-        <input 
-          value={option.text} 
-          placeholder="Option text" 
-          onChange={e => onUpdate({ text: e.target.value })} 
-        />
-        {questionType !== 'RANKING' && (
-          <label>
-            Exclusive 
-            <input 
-              type="checkbox" 
-              checked={!!option.isExclusive} 
-              onChange={e => onUpdate({ isExclusive: e.target.checked })} 
+      <IconButton
+        size="small"
+        {...listeners}
+        sx={{ 
+          cursor: 'grab',
+          '&:active': { cursor: 'grabbing' },
+        }}
+      >
+        <DragIndicatorIcon />
+      </IconButton>
+      <TextField
+        fullWidth
+        size="small"
+        value={option.text}
+        placeholder="Option text"
+        onChange={e => onUpdate({ text: e.target.value })}
+        variant="outlined"
+      />
+      {questionType !== 'RANKING' && (
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={!!option.isExclusive}
+              onChange={e => onUpdate({ isExclusive: e.target.checked })}
+              size="small"
             />
-          </label>
-        )}
-        <button 
-          type="button" 
-          className="reorder-btn" 
-          onClick={onDelete}
-        >
-          ✕
-        </button>
-      </div>
-    </div>
+          }
+          label="Exclusive"
+        />
+      )}
+      <IconButton
+        size="small"
+        onClick={onDelete}
+        color="error"
+      >
+        <DeleteIcon />
+      </IconButton>
+    </Paper>
   );
 };
 
@@ -179,137 +228,168 @@ const SortableQuestion: React.FC<SortableQuestionProps> = ({
   };
 
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
-      className="question-card"
+    <Card
+      ref={setNodeRef}
+      sx={{
+        ...style,
+        opacity: isDragging ? 0.5 : 1,
+        mb: 2,
+        cursor: isDragging ? 'grabbing' : 'default',
+        border: '1px solid',
+        borderColor: isDragging ? 'primary.main' : 'divider',
+      }}
+      elevation={isDragging ? 8 : 2}
       {...attributes}
     >
-      <div className="flex-row gap-xs">
-        <div 
-          {...listeners}
-          className={`drag-handle ${isDragging ? 'dragging' : ''}`}
-        >
-          ⋮⋮
-        </div>
-        <div className="question-content">
-          <input 
-            placeholder="Question text" 
-            value={question.text} 
-            onChange={e => onUpdate({ text: e.target.value })} 
-          />
-          <select 
-            aria-label="Question type" 
-            value={question.type} 
-            onChange={e => onUpdate({ type: e.target.value })}
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
+          <IconButton
+            {...listeners}
+            sx={{ 
+              cursor: 'grab',
+              '&:active': { cursor: 'grabbing' },
+              mt: 0.5,
+            }}
+            size="small"
           >
-            {questionTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
-          <label>
-            Required 
-            <input 
-              type="checkbox" 
-              checked={question.isRequired} 
-              onChange={e => onUpdate({ isRequired: e.target.checked })} 
-            />
-          </label>
-          <button 
-            type="button" 
-            className="reorder-btn delete-question-btn" 
-            onClick={onDelete}
-          >
-            ✕
-          </button>
+            <DragIndicatorIcon />
+          </IconButton>
           
-          {['SINGLE_CHOICE','MULTI_CHOICE','RANKING'].includes(question.type) && (
-            <div>
-              <button type="button" onClick={addOption}>Add Option</button>
-              <DndContext
-                sensors={useSensors(
-                  useSensor(PointerSensor),
-                  useSensor(KeyboardSensor, {
-                    coordinateGetter: sortableKeyboardCoordinates,
-                  })
-                )}
-                collisionDetection={closestCenter}
-                onDragEnd={handleOptionDragEnd}
+          <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip label={`Question ${index + 1}`} size="small" color="primary" />
+              <IconButton
+                onClick={onDelete}
+                color="error"
+                size="small"
               >
-                <SortableContext 
-                  items={question.options.map((_, i) => `option-${i}`)} 
-                  strategy={verticalListSortingStrategy}
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+            
+            <TextField
+              fullWidth
+              placeholder="Question text"
+              value={question.text}
+              onChange={e => onUpdate({ text: e.target.value })}
+              variant="outlined"
+              size="small"
+            />
+            
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Question Type</InputLabel>
+                <Select
+                  value={question.type}
+                  label="Question Type"
+                  onChange={e => onUpdate({ type: e.target.value })}
                 >
-                  {question.options.map((o, oi) => (
-                    <SortableOption
-                      key={oi}
-                      option={o}
-                      index={oi}
-                      questionType={question.type}
-                      totalOptions={question.options.length}
-                      onUpdate={(patch) => updateOption(oi, patch)}
-                      onDelete={() => deleteOption(oi)}
-                    />
+                  {questionTypes.map(t => (
+                    <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
                   ))}
-                </SortableContext>
-              </DndContext>
-            </div>
-          )}
-          
-          {question.type === 'MULTI_OPEN_END' && (
-            <div>
-              <button type="button" onClick={addOpenItem}>Add Sub Item</button>
-              {question.openItems.map((o, oi) => (
-                <div key={oi} className="flex-row gap-xs">
-                  <input 
-                    value={o.label} 
-                    placeholder="Item label" 
-                    onChange={e => onUpdate({ 
-                      openItems: question.openItems.map((oo,j) => 
-                        j===oi ? { ...oo, label: e.target.value } : oo
-                      ) 
-                    })} 
+                </Select>
+              </FormControl>
+              
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={question.isRequired}
+                    onChange={e => onUpdate({ isRequired: e.target.checked })}
+                    size="small"
                   />
-                  <button 
-                    type="button" 
-                    className="reorder-btn" 
-                    onClick={() => {
-                      if (oi === 0) return;
-                      const arr = [...question.openItems];
-                      [arr[oi-1], arr[oi]] = [arr[oi], arr[oi-1]];
-                      onUpdate({ openItems: arr.map((x,j2) => ({ ...x, order: j2 })) });
-                    }} 
-                    disabled={oi===0}
+                }
+                label="Required"
+              />
+            </Box>
+            
+            {/* Options for choice and ranking questions */}
+            {['SINGLE_CHOICE','MULTI_CHOICE','RANKING'].includes(question.type) && (
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle2">Options</Typography>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={addOption}
+                    size="small"
+                    variant="outlined"
                   >
-                    ↑
-                  </button>
-                  <button 
-                    type="button" 
-                    className="reorder-btn" 
-                    onClick={() => {
-                      if (oi === question.openItems.length-1) return;
-                      const arr = [...question.openItems];
-                      [arr[oi+1], arr[oi]] = [arr[oi], arr[oi+1]];
-                      onUpdate({ openItems: arr.map((x,j2) => ({ ...x, order: j2 })) });
-                    }} 
-                    disabled={oi===question.openItems.length-1}
+                    Add Option
+                  </Button>
+                </Box>
+                <DndContext
+                  sensors={useSensors(
+                    useSensor(PointerSensor),
+                    useSensor(KeyboardSensor, {
+                      coordinateGetter: sortableKeyboardCoordinates,
+                    })
+                  )}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleOptionDragEnd}
+                >
+                  <SortableContext 
+                    items={question.options.map((_, i) => `option-${i}`)} 
+                    strategy={verticalListSortingStrategy}
                   >
-                    ↓
-                  </button>
-                  <button 
-                    type="button" 
-                    className="reorder-btn" 
-                    onClick={() => onUpdate({ 
-                      openItems: question.openItems.filter((_,j) => j!==oi).map((x,j2) => ({ ...x, order: j2 })) 
-                    })}
+                    {question.options.map((o, oi) => (
+                      <SortableOption
+                        key={oi}
+                        option={o}
+                        index={oi}
+                        questionType={question.type}
+                        totalOptions={question.options.length}
+                        onUpdate={(patch) => updateOption(oi, patch)}
+                        onDelete={() => deleteOption(oi)}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </Box>
+            )}
+
+            {/* Open items for multi open end questions */}
+            {question.type === 'MULTI_OPEN_END' && (
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle2">Open Items</Typography>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={addOpenItem}
+                    size="small"
+                    variant="outlined"
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+                    Add Item
+                  </Button>
+                </Box>
+                {question.openItems.map((o, oi) => (
+                  <Box key={oi} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      value={o.label}
+                      placeholder="Item label"
+                      onChange={e => onUpdate({ 
+                        openItems: question.openItems.map((oo,j) => 
+                          j===oi ? { ...oo, label: e.target.value } : oo
+                        ) 
+                      })}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => onUpdate({ 
+                        openItems: question.openItems.filter((_,j) => j!==oi).map((x,j2) => ({ ...x, order: j2 })) 
+                      })}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -397,15 +477,53 @@ export const SurveyBuilder: React.FC<BuilderProps> = ({ onDone }) => {
   };
 
   return (
-    <div>
-      <h2>Create Survey</h2>
-      <label>Title <input value={title} onChange={e => setTitle(e.target.value)} /></label>
-      <br />
-      <label>Description <input value={description} onChange={e => setDescription(e.target.value)} /></label>
-      <br />
-      <button onClick={addQuestion}>Add Question</button>
-      {!!errors.length && (
-        <div className="error preline">{errors.join('\n')}</div>
+    <Container maxWidth="lg">
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Create Survey
+          </Typography>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <TextField
+              fullWidth
+              label="Survey Title"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              variant="outlined"
+              required
+            />
+            
+            <TextField
+              fullWidth
+              label="Survey Description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              variant="outlined"
+              multiline
+              rows={2}
+            />
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6">Questions</Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={addQuestion}
+              >
+                Add Question
+              </Button>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {errors.length > 0 && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {errors.map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
+        </Alert>
       )}
       
       <DndContext
@@ -430,8 +548,27 @@ export const SurveyBuilder: React.FC<BuilderProps> = ({ onDone }) => {
         </SortableContext>
       </DndContext>
 
-      <button disabled={!title || questions.length===0} onClick={save}>Save Survey</button>
-      <button onClick={onDone}>Cancel</button>
-    </div>
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              onClick={onDone}
+              startIcon={<CancelIcon />}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              disabled={!title || questions.length === 0}
+              onClick={save}
+              startIcon={<SaveIcon />}
+            >
+              Save Survey
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };

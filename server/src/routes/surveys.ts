@@ -82,6 +82,13 @@ router.get('/', async (req: Request & { user?: any }, res: Response) => {
   const whereClause = isAdmin ? {} : { status: 'ACTIVE' };
   const surveys = await prisma.survey.findMany({ 
     where: whereClause,
+    include: {
+      _count: {
+        select: {
+          responses: true
+        }
+      }
+    },
     orderBy: { createdAt: 'desc' } 
   });
   res.json(surveys);

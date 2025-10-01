@@ -46,7 +46,14 @@ import { SurveyTaker } from '../components/SurveyTaker';
 import { SurveyResults } from '../components/SurveyResults';
 import axios from '../lib/axios';
 
-export interface SurveySummary { id: string; title: string; status: string; }
+export interface SurveySummary { 
+  id: string; 
+  title: string; 
+  status: string; 
+  _count?: { 
+    responses: number; 
+  }; 
+}
 
 type View = 'list'|'builder'|'editor'|'take'|'results'|'auth';
 interface AuthUser { id: string; email: string; role: string; }
@@ -257,6 +264,14 @@ export const App: React.FC = () => {
                               color={s.status === 'ACTIVE' ? 'success' : s.status === 'DRAFT' ? 'warning' : 'default'}
                               size="small"
                             />
+                            {(s.status === 'ACTIVE' || s.status === 'CLOSED') && s._count && (
+                              <Chip
+                                label={`${s._count.responses} response${s._count.responses !== 1 ? 's' : ''}`}
+                                variant="outlined"
+                                size="small"
+                                color="info"
+                              />
+                            )}
                           </Box>
                         }
                       />
