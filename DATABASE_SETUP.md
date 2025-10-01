@@ -6,6 +6,7 @@ This project supports both PostgreSQL (production) and SQLite (local development
 - Uses PostgreSQL automatically
 - Schema: `prisma/schema.prisma`
 - Environment variables are set automatically by Render
+- Uses `prisma db push` for schema synchronization
 
 ## Local Development Options
 
@@ -30,6 +31,14 @@ Good for quick local development.
 2. Use the SQLite schema: `npx prisma migrate dev --schema=./prisma/schema-sqlite.prisma`
 3. Generate client: `npx prisma generate --schema=./prisma/schema-sqlite.prisma`
 
+## Migration Notes
+
+The project includes migrations that have been converted to work with both SQLite and PostgreSQL. However:
+
+- **Production (Render)**: Uses `prisma db push` to avoid migration conflicts
+- **Local Development**: Use `prisma migrate dev` for development workflow
+- If switching between SQLite and PostgreSQL locally, you may need to reset migrations
+
 ## Commands
 
 ### PostgreSQL (Production Schema)
@@ -37,6 +46,7 @@ Good for quick local development.
 npx prisma migrate dev        # Apply migrations
 npx prisma generate          # Generate client
 npx prisma studio           # Open database browser
+npx prisma db push          # Push schema (production)
 ```
 
 ### SQLite (Development Schema)
