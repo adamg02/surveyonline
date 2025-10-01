@@ -133,9 +133,11 @@ export const App: React.FC = () => {
                 label={`${user.email} (${user.role})`} 
                 sx={{ 
                   color: 'white',
-                  borderColor: 'white',
+                  borderColor: 'rgba(255, 255, 255, 0.7)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
                   '& .MuiChip-label': {
-                    color: 'white'
+                    color: 'white',
+                    fontWeight: 500,
                   }
                 }}
                 variant="outlined"
