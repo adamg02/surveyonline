@@ -17,6 +17,6 @@
     "transpileOnly": true,
     "compilerOptions": { "module": "CommonJS" }
   },
-  "include": ["src", "test"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "test", "**/*.test.ts", "**/*.spec.ts"]
 }

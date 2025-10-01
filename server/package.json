@@ -16,6 +16,7 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:generate": "prisma generate",
     "test": "tsx ./test/basic.test.ts",
+    "test:type-check": "tsc --noEmit -p tsconfig.dev.json",
     "seed": "tsx ./src/scripts/seed.ts",
     "seed:prod": "node dist/scripts/seed.js"
   },

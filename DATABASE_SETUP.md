@@ -45,3 +45,13 @@ npx prisma migrate dev --schema=./prisma/schema-sqlite.prisma
 npx prisma generate --schema=./prisma/schema-sqlite.prisma  
 npx prisma studio --schema=./prisma/schema-sqlite.prisma
 ```
+
+## TypeScript Configuration
+
+### Production Build
+- Uses `tsconfig.json` - excludes test files for clean production builds
+- Command: `npm run build`
+
+### Development & Testing
+- Uses `tsconfig.dev.json` - includes test files for type checking
+- Commands: `npm run test:type-check`, `npm test`
