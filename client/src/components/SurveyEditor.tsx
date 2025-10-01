@@ -106,26 +106,64 @@ const SortableOption: React.FC<SortableOptionProps> = ({ option, optionIndex, on
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="sortable-option">
-      <div className="drag-handle" {...attributes} {...listeners}>⋮⋮</div>
-      <input
+    <Paper
+      ref={setNodeRef}
+      sx={{
+        ...style,
+        opacity: isDragging ? 0.5 : 1,
+        p: 2,
+        mb: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        border: '1px solid',
+        borderColor: 'divider',
+        '&:hover': {
+          borderColor: 'primary.main',
+        },
+      }}
+      elevation={isDragging ? 8 : 1}
+      {...attributes}
+    >
+      <IconButton
+        size="small"
+        {...listeners}
+        sx={{ 
+          cursor: 'grab',
+          '&:active': { cursor: 'grabbing' },
+        }}
+      >
+        <DragIndicatorIcon />
+      </IconButton>
+      <TextField
+        fullWidth
+        size="small"
         value={option.text}
         onChange={(e) => onUpdate({ text: e.target.value })}
         placeholder="Option text"
-        className="option-input"
+        variant="outlined"
       />
       {showExclusive && (
-        <label className="exclusive-checkbox">
-          <input
-            type="checkbox"
-            checked={option.isExclusive || false}
-            onChange={(e) => onUpdate({ isExclusive: e.target.checked })}
-          />
-          Exclusive
-        </label>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={option.isExclusive || false}
+              onChange={(e) => onUpdate({ isExclusive: e.target.checked })}
+              size="small"
+            />
+          }
+          label="Exclusive"
+        />
       )}
-      <button type="button" className="delete-option" onClick={onDelete}>×</button>
-    </div>
+      <IconButton
+        size="small"
+        onClick={onDelete}
+        color="error"
+      >
+        <DeleteIcon />
+      </IconButton>
+    </Paper>
   );
 };
 
@@ -200,93 +238,156 @@ const SortableQuestion: React.FC<SortableQuestionProps> = ({ question, index, on
   const showExclusive = question.type === 'MULTI_OPEN_END';
 
   return (
-    <div ref={setNodeRef} style={style} className="question-card">
-      <div className="question-header">
-        <div className="drag-handle" {...attributes} {...listeners}>⋮⋮</div>
-        <span className="question-number">Question {index + 1} of {totalQuestions}</span>
-        <button type="button" className="delete-question" onClick={onDelete}>Delete</button>
-      </div>
-      
-      <label>
-        Question Text
-        <input
-          value={question.text}
-          onChange={(e) => onUpdate({ text: e.target.value })}
-          placeholder="Enter your question"
-        />
-      </label>
-
-      <label>
-        Question Type
-        <select
-          value={question.type}
-          onChange={(e) => onUpdate({ type: e.target.value })}
-        >
-          {questionTypes.map(type => (
-            <option key={type.value} value={type.value}>{type.label}</option>
-          ))}
-        </select>
-      </label>
-
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={question.isRequired}
-          onChange={(e) => onUpdate({ isRequired: e.target.checked })}
-        />
-        Required
-      </label>
-
-      {needsOptions && (
-        <div className="options-section">
-          <div className="options-header">
-            <h4>Options</h4>
-            <button type="button" onClick={addOption}>Add Option</button>
-          </div>
-          
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleOptionDragEnd}
+    <Card
+      ref={setNodeRef}
+      sx={{
+        ...style,
+        opacity: isDragging ? 0.5 : 1,
+        mb: 2,
+        cursor: isDragging ? 'grabbing' : 'default',
+        border: '1px solid',
+        borderColor: isDragging ? 'primary.main' : 'divider',
+      }}
+      elevation={isDragging ? 8 : 2}
+      {...attributes}
+    >
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
+          <IconButton
+            {...listeners}
+            sx={{ 
+              cursor: 'grab',
+              '&:active': { cursor: 'grabbing' },
+              mt: 0.5,
+            }}
+            size="small"
           >
-            <SortableContext
-              items={question.options.map((_, idx) => `option-${idx}`)}
-              strategy={verticalListSortingStrategy}
-            >
-              {question.options.map((option, optionIndex) => (
-                <SortableOption
-                  key={optionIndex}
-                  option={option}
-                  optionIndex={optionIndex}
-                  onUpdate={(patch) => updateOption(optionIndex, patch)}
-                  onDelete={() => deleteOption(optionIndex)}
-                  showExclusive={showExclusive}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        </div>
-      )}
-
-      {needsOpenItems && (
-        <div className="open-items-section">
-          <div className="open-items-header">
-            <h4>Open Items</h4>
-            <button type="button" onClick={addOpenItem}>Add Item</button>
-          </div>
-          {question.openItems.map((item, itemIndex) => (
-            <div key={itemIndex} className="open-item">
-              <input
-                value={item.label}
-                onChange={(e) => updateOpenItem(itemIndex, { label: e.target.value })}
-                placeholder="Item label"
+            <DragIndicatorIcon />
+          </IconButton>
+          
+          <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip label={`Question ${index + 1}`} size="small" color="primary" />
+              <IconButton
+                onClick={onDelete}
+                color="error"
+                size="small"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+            
+            <TextField
+              fullWidth
+              placeholder="Enter your question"
+              value={question.text}
+              onChange={(e) => onUpdate({ text: e.target.value })}
+              variant="outlined"
+              size="small"
+              label="Question Text"
+            />
+            
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Question Type</InputLabel>
+                <Select
+                  value={question.type}
+                  label="Question Type"
+                  onChange={(e) => onUpdate({ type: e.target.value })}
+                >
+                  {questionTypes.map(type => (
+                    <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={question.isRequired}
+                    onChange={(e) => onUpdate({ isRequired: e.target.checked })}
+                    size="small"
+                  />
+                }
+                label="Required"
               />
-              <button type="button" onClick={() => deleteOpenItem(itemIndex)}>Delete</button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            </Box>
+
+            {needsOptions && (
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle2">Options</Typography>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={addOption}
+                    size="small"
+                    variant="outlined"
+                  >
+                    Add Option
+                  </Button>
+                </Box>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleOptionDragEnd}
+                >
+                  <SortableContext
+                    items={question.options.map((_, idx) => `option-${idx}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {question.options.map((option, optionIndex) => (
+                      <SortableOption
+                        key={optionIndex}
+                        option={option}
+                        optionIndex={optionIndex}
+                        onUpdate={(patch) => updateOption(optionIndex, patch)}
+                        onDelete={() => deleteOption(optionIndex)}
+                        showExclusive={showExclusive}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </Box>
+            )}
+
+            {needsOpenItems && (
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle2">Open Items</Typography>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={addOpenItem}
+                    size="small"
+                    variant="outlined"
+                  >
+                    Add Item
+                  </Button>
+                </Box>
+                {question.openItems.map((item, itemIndex) => (
+                  <Box key={itemIndex} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      value={item.label}
+                      onChange={(e) => updateOpenItem(itemIndex, { label: e.target.value })}
+                      placeholder="Item label"
+                      variant="outlined"
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => deleteOpenItem(itemIndex)}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 
