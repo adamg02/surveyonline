@@ -15,10 +15,26 @@ const createApp = () => {
     // CORS configuration
     const corsOptions = {
         origin: process.env.NODE_ENV === 'production'
-            ? [
-                'https://surveyonline-frontend.onrender.com',
-                'https://surveyonline-frontend-*.onrender.com' // for preview deployments
-            ]
+            ? (origin, callback) => {
+                // Allow requests with no origin (like mobile apps or curl requests)
+                if (!origin)
+                    return callback(null, true);
+                // List of allowed origins
+                const allowedOrigins = [
+                    'https://surveyonline-frontend.onrender.com',
+                    'https://surveyonline-ln66.onrender.com',
+                    process.env.FRONTEND_URL
+                ].filter(Boolean);
+                // Check if origin is in allowed list or matches surveyonline pattern
+                const isAllowed = allowedOrigins.includes(origin) ||
+                    origin.match(/^https:\/\/surveyonline-[a-zA-Z0-9-]+\.onrender\.com$/);
+                if (isAllowed) {
+                    callback(null, true);
+                }
+                else {
+                    callback(new Error('Not allowed by CORS'), false);
+                }
+            }
             : [
                 'http://localhost:5173',
                 'http://localhost:3000'

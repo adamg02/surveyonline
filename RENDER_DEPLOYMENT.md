@@ -45,6 +45,7 @@ The blueprint automatically sets up most environment variables, but you may want
 - `ADMIN_PASSWORD`: Auto-generated secure password
 - `JWT_SECRET`: Auto-generated secure secret
 - `DATABASE_URL`: Auto-configured PostgreSQL connection
+- `FRONTEND_URL`: Frontend domain for CORS (set to your frontend URL)
 
 **Frontend Environment Variables:**
 - `VITE_API_URL`: Automatically set to backend service URL
@@ -140,7 +141,12 @@ Schema changes are automatically applied during deployment.
 Update the frontend's `VITE_API_URL` if using a custom API domain.
 
 ### 3. Update CORS Settings
-Update the backend's CORS configuration in `src/app.ts` if needed.
+The backend automatically allows CORS requests from:
+- Your configured `FRONTEND_URL` environment variable
+- Any `https://surveyonline-*.onrender.com` domain
+- Specific hardcoded domains in `src/app.ts`
+
+If you have a custom frontend domain, update the `FRONTEND_URL` environment variable in your backend service.
 
 ## Scaling and Performance
 
@@ -174,7 +180,8 @@ Update the backend's CORS configuration in `src/app.ts` if needed.
 
 **CORS Errors:**
 - Verify frontend domain in CORS settings
-- Check environment variables
+- Update `FRONTEND_URL` environment variable with your actual frontend URL
+- Check that your frontend URL matches the pattern `https://surveyonline-*.onrender.com`
 - Ensure HTTPS is used in production
 
 ### Debugging Steps

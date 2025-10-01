@@ -25,6 +25,8 @@ services:
         value: admin@example.com
       - key: ADMIN_PASSWORD
         generateValue: true
+      - key: FRONTEND_URL
+        value: https://surveyonline-ln66.onrender.com
 
 databases:
   - name: surveyonline-db
