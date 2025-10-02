@@ -1,5 +1,5 @@
-# Alternative Render.com Blueprint (render-v2.yaml)
-# Use this version if the main render.yaml doesn't work
+# Alternative Render.com Blueprint for Snowflake (render-v2.yaml)
+# Use this version if the main render.yaml doesn't work or for different deployment needs
 
 services:
   - type: web
@@ -7,20 +7,28 @@ services:
     runtime: node
     repo: https://github.com/adamg02/surveyonline.git
     branch: main
-    buildCommand: cd server && npm ci && npx prisma generate && npm run build
-    startCommand: cd server && npx prisma migrate deploy && npm run seed:prod && npm start
+    buildCommand: cd server && npm ci && npm run build
+    startCommand: cd server && npm run deploy && npm start
     healthCheckPath: /api/health
     plan: starter
     region: oregon
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_PROVIDER
-        value: postgresql
-      - key: DATABASE_URL
-        fromDatabase:
-          name: surveyonline-db
-          property: connectionString
+      - key: SNOWFLAKE_ACCOUNT
+        value: YOUR_SNOWFLAKE_ACCOUNT
+      - key: SNOWFLAKE_USERNAME
+        value: YOUR_SNOWFLAKE_USERNAME
+      - key: SNOWFLAKE_PASSWORD
+        value: YOUR_SNOWFLAKE_PASSWORD
+      - key: SNOWFLAKE_DATABASE
+        value: SURVEYONLINE
+      - key: SNOWFLAKE_SCHEMA
+        value: PUBLIC
+      - key: SNOWFLAKE_WAREHOUSE
+        value: COMPUTE_WH
+      - key: SNOWFLAKE_ROLE
+        value: ACCOUNTADMIN
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_EMAIL
@@ -44,9 +52,5 @@ services:
         source: /*
         destination: /index.html
 
-databases:
-  - name: surveyonline-db
-    databaseName: surveyonline
-    user: surveyonline_user
-    plan: starter
-    region: oregon
+# Note: No database service needed as Snowflake is external
+# You must configure Snowflake credentials manually in the environment variables

@@ -27,44 +27,70 @@ An online survey platform supporting multiple question types:
 
 ## Stack
 
-- Backend: Node.js + Express + TypeScript + SQLite (via Prisma) for quick local dev (can swap to Postgres later)
+- Backend: Node.js + Express + TypeScript + Snowflake (cloud data warehouse)
 - Frontend: React + Vite + TypeScript + @dnd-kit (drag and drop)
 
 ## Quick Start
 
+### Prerequisites
+
+1. **Snowflake Account**: You'll need a Snowflake account with appropriate permissions
+2. **Environment Variables**: Configure Snowflake connection details
+
 ### Local Development
 
 1. Install dependencies
-2. Generate Prisma client & migrate
-3. Seed initial data (optional)
-4. Run dev (concurrently runs server and client)
+2. Configure Snowflake environment variables
+3. Set up database schema
+4. Seed initial data (optional)
+5. Run dev (concurrently runs server and client)
 
 ### Production Deployment
 
 Deploy to Render.com in two steps:
 
-1. **Blueprint Deployment**: Deploy backend + database using `render.yaml`
+1. **Blueprint Deployment**: Deploy backend using `render.yaml` (update Snowflake credentials)
 2. **Manual Frontend**: Add static site for the React frontend
 
 Quick start:
 1. Fork this repository
-2. Connect to [Render Dashboard](https://dashboard.render.com)
-3. Create new Blueprint deployment
-4. Select this repository (deploys backend + database)
-5. Manually add Static Site for frontend
+2. Set up Snowflake database and credentials
+3. Connect to [Render Dashboard](https://dashboard.render.com)
+4. Create new Blueprint deployment
+5. Configure Snowflake environment variables
+6. Manually add Static Site for frontend
 
-See `QUICK_DEPLOY.md` for step-by-step instructions or `RENDER_DEPLOYMENT.md` for comprehensive guide.
+See `SNOWFLAKE_MIGRATION.md` for detailed migration information and `QUICK_DEPLOY.md` for step-by-step instructions.
 
 ### Commands
 
 From repository root:
 
 - Install: `npm install`
-- Apply initial migration & generate Prisma client: `npm run prisma:migrate --workspace=server`
+- Set up database schema: `npm run setup:db --workspace=server`
 - Seed database with admin user and sample survey: `npm run seed --workspace=server`
 - Start backend only: `npm run dev:server`
 - Start frontend only: `npm run dev:client`
 - Start both: `npm run dev`
+
+### Configuration
+
+Copy the environment example and configure your Snowflake credentials:
+
+```bash
+cp server/.env.example server/.env
+```
+
+Required environment variables:
+```bash
+SNOWFLAKE_ACCOUNT=your_account.region
+SNOWFLAKE_USERNAME=your_username
+SNOWFLAKE_PASSWORD=your_password
+SNOWFLAKE_DATABASE=SURVEYONLINE
+SNOWFLAKE_SCHEMA=PUBLIC
+SNOWFLAKE_WAREHOUSE=COMPUTE_WH
+SNOWFLAKE_ROLE=ACCOUNTADMIN
+```
 
 ### Default Admin Credentials
 
@@ -219,14 +245,25 @@ The results page provides comprehensive analytics with stunning visualizations:
 ## Deployment
 
 ### Render.com (Recommended)
-- One-click deployment with `render.yaml` blueprint
-- Automatic PostgreSQL database setup
-- SSL certificates and CDN included
+- Blueprint deployment with `render.yaml` (configured for Snowflake)
+- Automatic SSL certificates and CDN included
 - Auto-scaling and monitoring
+- **Note**: Requires manual Snowflake credentials configuration
 
 ### Manual Deployment
 - Supports any Node.js hosting platform
-- PostgreSQL database required for production
+- Snowflake database required for production
 - Environment variables configuration needed
 
-See `RENDER_DEPLOYMENT.md` for complete deployment guide.
+See `SNOWFLAKE_MIGRATION.md` for complete setup guide and `RENDER_DEPLOYMENT.md` for deployment instructions.
+
+### Database Migration
+
+This application has been migrated from PostgreSQL/Prisma to Snowflake for improved scalability and analytics capabilities. Key benefits:
+
+- **Massive Scale**: Handle millions of survey responses
+- **Real-time Analytics**: Built-in data warehousing capabilities
+- **Cost Efficiency**: Pay-per-use pricing model
+- **Advanced Features**: JSON support, time travel, data sharing
+
+See `SNOWFLAKE_MIGRATION.md` for detailed migration information, schema changes, and setup instructions.

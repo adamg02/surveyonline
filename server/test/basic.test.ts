@@ -1,8 +1,7 @@
 import request from 'supertest';
 import { createApp } from '../src/app';
-import { PrismaClient } from '@prisma/client';
+import { executeStatement } from '../src/db/snowflake';
 
-const prisma = new PrismaClient();
 const app = createApp();
 
 (async () => {
@@ -23,8 +22,9 @@ const app = createApp();
   }
   const surveyId = surveyRes.body.id;
   const survey = surveyRes.body;
+  
   // Activate
-  await prisma.survey.update({ where: { id: surveyId }, data: { status: 'ACTIVE' } });
+  await executeStatement('UPDATE SURVEYS SET STATUS = ? WHERE ID = ?', ['ACTIVE', surveyId]);
 
   // Submit response
   const responseRes = await request(app)
@@ -48,5 +48,7 @@ const app = createApp();
     process.exit(1);
   }
   console.log('Aggregate sample:', aggRes.body);
-  await prisma.$disconnect();
+  
+  const { closeConnection } = await import('../src/db/snowflake');
+  await closeConnection();
 })();

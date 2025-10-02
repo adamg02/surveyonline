@@ -1,5 +1,5 @@
-# Render.com Blueprint for SurveyOnline
-# This deploys the backend API and database
+# Render.com Blueprint for SurveyOnline with Snowflake
+# This deploys the backend API 
 # Deploy the frontend separately as a Static Site
 
 services:
@@ -9,16 +9,26 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: cd server && npm install && npx prisma generate && npm run build
-    startCommand: cd server && npx prisma db push && npm run seed:prod && npm start
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && npm run deploy && npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: surveyonline-db
-          property: connectionString
+      - key: SNOWFLAKE_ACCOUNT
+        value: YOUR_SNOWFLAKE_ACCOUNT
+      - key: SNOWFLAKE_USERNAME
+        value: YOUR_SNOWFLAKE_USERNAME
+      - key: SNOWFLAKE_PASSWORD
+        value: YOUR_SNOWFLAKE_PASSWORD
+      - key: SNOWFLAKE_DATABASE
+        value: SURVEYONLINE
+      - key: SNOWFLAKE_SCHEMA
+        value: PUBLIC
+      - key: SNOWFLAKE_WAREHOUSE
+        value: COMPUTE_WH
+      - key: SNOWFLAKE_ROLE
+        value: ACCOUNTADMIN
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_EMAIL
@@ -27,11 +37,6 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         value: https://surveyonline-ln66.onrender.com
-
-databases:
-  - name: surveyonline-db
-    databaseName: surveyonline
-    user: surveyonline_user
 
 # After deploying this blueprint, manually create a Static Site for the frontend:
 # 1. New > Static Site
@@ -46,12 +51,12 @@ databases:
 # - NODE_ENV: Set to 'production' for the backend
 # - PORT: Set to 10000 (Render's default)
 # - JWT_SECRET: Auto-generated secure secret for JWT tokens
-# - DATABASE_URL: Auto-generated PostgreSQL connection string
+# - SNOWFLAKE_*: Snowflake connection credentials (must be provided manually)
 # - VITE_API_URL: Frontend API endpoint URL
 
 # Deployment Notes:
-# 1. The backend will automatically run Prisma migrations on first deploy
+# 1. The backend will automatically run database setup on first deploy
 # 2. The frontend will be built as a static site with SPA routing
-# 3. Database will be automatically provisioned and connected
+# 3. Snowflake database must be set up separately with proper credentials
 # 4. SSL certificates will be automatically provided
 # 5. Custom domains can be added in the Render dashboard
