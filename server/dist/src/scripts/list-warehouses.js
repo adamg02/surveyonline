@@ -32,33 +32,22 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+require("dotenv/config");
 const snowflake_1 = require("../db/snowflake");
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-async function testLogin() {
+async function main() {
     try {
-        const user = await (0, snowflake_1.executeQuery)('SELECT * FROM USERS WHERE EMAIL = ?', ['admin@example.com']);
-        if (user.length === 0) {
-            console.log('❌ User not found');
-            return;
-        }
-        console.log('✅ User found:', user[0].EMAIL, user[0].ROLE);
-        // Test the passwords
-        const passwords = ['Admin123!', 'admin123', 'Admin123', 'password'];
-        for (const pwd of passwords) {
-            const isValid = await bcryptjs_1.default.compare(pwd, user[0].PASSWORD);
-            console.log(`Password "${pwd}": ${isValid ? '✅ VALID' : '❌ Invalid'}`);
-        }
+        const warehouses = await (0, snowflake_1.executeQuery)('SHOW WAREHOUSES');
+        console.log('Available warehouses:');
+        warehouses.forEach((warehouse) => {
+            console.log(`- ${warehouse.name} (${warehouse.state})`);
+        });
     }
     catch (error) {
-        console.error('Error:', error);
-    }
-    finally {
-        const { closeConnection } = await Promise.resolve().then(() => __importStar(require('../db/snowflake')));
-        await closeConnection();
+        console.error('Error listing warehouses:', error);
     }
 }
-testLogin();
+main().catch(e => { console.error(e); process.exit(1); }).finally(async () => {
+    const { closeConnection } = await Promise.resolve().then(() => __importStar(require('../db/snowflake')));
+    await closeConnection();
+});
