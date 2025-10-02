@@ -7,8 +7,8 @@ services:
     runtime: node
     repo: https://github.com/adamg02/surveyonline.git
     branch: main
-    buildCommand: cd server && npm ci && npm run build && npm run setup:db && npm run seed:prod
-    startCommand: cd server && npm start
+    buildCommand: cd server && npm ci && npm run build
+    startCommand: cd server && npm run deploy && npm start
     healthCheckPath: /api/health
     plan: starter
     region: oregon

@@ -148,7 +148,13 @@ async function main() {
         console.log('Surveys already present, skipping sample survey.');
     }
 }
-main().catch(e => { console.error(e); process.exit(1); }).finally(async () => {
+main().catch(e => {
+    console.error(e);
+    // In production, don't exit on seed failure - just log and continue
+    if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+    }
+}).finally(async () => {
     const { closeConnection } = await Promise.resolve().then(() => __importStar(require('../db/snowflake')));
     await closeConnection();
 });

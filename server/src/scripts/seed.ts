@@ -132,7 +132,13 @@ async function main() {
   }
 }
 
-main().catch(e => { console.error(e); process.exit(1); }).finally(async () => { 
+main().catch(e => { 
+  console.error(e); 
+  // In production, don't exit on seed failure - just log and continue
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+}).finally(async () => { 
   const { closeConnection } = await import('../db/snowflake');
   await closeConnection();
 });

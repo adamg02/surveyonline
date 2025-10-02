@@ -89,6 +89,13 @@ async function setupDatabase() {
         console.log('- SNOWFLAKE_USERNAME:', process.env.SNOWFLAKE_USERNAME);
         console.log('- SNOWFLAKE_DATABASE:', process.env.SNOWFLAKE_DATABASE);
         console.log('- SNOWFLAKE_WAREHOUSE:', process.env.SNOWFLAKE_WAREHOUSE);
+        // Check required environment variables
+        const requiredEnvVars = ['SNOWFLAKE_ACCOUNT', 'SNOWFLAKE_USERNAME', 'SNOWFLAKE_PASSWORD', 'SNOWFLAKE_DATABASE', 'SNOWFLAKE_WAREHOUSE'];
+        for (const envVar of requiredEnvVars) {
+            if (!process.env[envVar]) {
+                throw new Error(`Missing required environment variable: ${envVar}`);
+            }
+        }
         for (const sql of createTablesSQL) {
             console.log('Executing:', sql.split('\n')[0] + '...');
             await (0, snowflake_1.executeStatement)(sql);
@@ -97,6 +104,11 @@ async function setupDatabase() {
     }
     catch (error) {
         console.error('Database setup failed:', error);
+        // In production, don't exit on database setup failure - just log and continue
+        if (process.env.NODE_ENV === 'production') {
+            console.warn('Database setup failed in production, continuing anyway...');
+            return;
+        }
         process.exit(1);
     }
 }
